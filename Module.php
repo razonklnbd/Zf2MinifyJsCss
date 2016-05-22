@@ -24,6 +24,27 @@ class Module {
 	public function getConfig() {
 		return include __DIR__.'config/module.config.php';
 	}
+
+	#/*
+	public function getServiceConfig() {
+		$rtrn['factories']['appHttpLocation']=function (ServiceManager $sm) {
+				#die('got http location? @'.__LINE__.': '.__FILE__);
+				if(!defined('DS')) define('DS', DIRECTORY_SEPARATOR);
+				if(!defined('APP_ROOT_PATH')){
+					$curroot=((@__DIR__ == '__DIR__')?((@__FILE__ == '__FILE__')?realpath('.'):dirname(__FILE__)):__DIR__).DS;
+					$appRootPath=realpath($curroot.'..'.DS.'..').DS;
+					#die('$appRootPath: '.$appRootPath.' @'.__LINE__.': '.__FILE__);
+					#throw new \Exception('please set APP_ROOT_PATH at your public index.php and adjust path here accordingle to get right path!');
+				}else $appRootPath=APP_ROOT_PATH;
+				#return realpath($appRootPath.'..'.DS.'..'.DS.'public_html').DS;
+				return realpath($appRootPath.'public_html').DS;
+				#return APP_ROOT_PATH.'..'.DS.'public_html'.DS;
+			};
+		return $rtrn;
+	}
+	#*/
+
+
 	public function getViewHelperConfig() {
 		$rtrn['invokables']['headStyle']='MinifyJsCss\\Helper\\HeadStyle';
 		$rtrn['factories']['headScript']=function (HelperPluginManager $sm) {
