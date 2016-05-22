@@ -1,47 +1,30 @@
 <?php
 namespace MinifyJsCss;
 
-use WMS\WmsModuleBase;
-use Zend\Mvc\MvcEvent;
 use Zend\View\HelperPluginManager;
-use Wurfl\View\Helper\WurflHelper;
-use MinifyJsCss\Helper\HeadLink;
 use Zend\ServiceManager\ServiceManager;
+use MinifyJsCss\Helper\HeadLink;
 use MinifyJsCss\Helper\HeadScript;
 
-class Module extends WmsModuleBase {
-	function getNameSpace(){ return __NAMESPACE__; }
-	function getCurrentModulePath(){ return __DIR__ . DS; }
-	protected function isModuleUsingSSL(){ return $this->isServerUsingSSL(); }
+class Module {
 
-/*
-	public function preControllerExecute(MvcEvent $e){
-		$rtrn=parent::preControllerExecute($e);
-		if(empty($rtrn)) return ;
-		
-		return $this;
+	public function getAutoloaderConfig() {
+		return array(
+				'Zend\Loader\ClassMapAutoloader' => array(
+						__DIR__.'/autoload_classmap.php',
+				),
+				'Zend\Loader\StandardAutoloader' => array(
+						'namespaces' => array(
+								__NAMESPACE__ => __DIR__.'/src/'.__NAMESPACE__,
+						),
+				),
+		);
 	}
-	 'view_helpers' => array(
-      'invokables' => array(
-         'lowercase' => 'MyModule\View\Helper\LowerCase',
-         'uppercase' => 'MyModule\View\Helper\UpperCase',
-      ),
-   ),
-#*/
-
-/*
-	public function getServiceConfig() {
-		$rtrn=parent::getServiceConfig();
-		$rtrn['factories']['appHttpLocation']=function (ServiceManager $sm) {
-				if(!defined('APP_ROOT_PATH')) throw new \Exception('please set APP_ROOT_PATH at your public index.php and adjust path here accordingle to get right path!');
-				return realpath(APP_ROOT_PATH.'..'.DS.'..'.DS.'public_html').DS;
-				#return APP_ROOT_PATH.'..'.DS.'public_html'.DS;
-			};
-		return $rtrn;
+	
+	public function getConfig() {
+		return include __DIR__.'config/module.config.php';
 	}
-#*/
 	public function getViewHelperConfig() {
-		$rtrn=parent::getViewHelperConfig();
 		$rtrn['invokables']['headStyle']='MinifyJsCss\\Helper\\HeadStyle';
 		$rtrn['factories']['headScript']=function (HelperPluginManager $sm) {
 						$url=$sm->getRenderer()->plugin('url');
