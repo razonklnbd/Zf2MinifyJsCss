@@ -74,14 +74,27 @@ class HeadScript extends ZendViewHelperHeadScript {
     public function itemToString($item, $indent, $escapeStart, $escapeEnd) {
     	#die('<pre>'.print_r($item, true));
     	if(!empty($item->type) && !empty($item->attributes)){
-    		$src='';
-    		foreach ($item->attributes as $key => $value){
-    			if($key=='src' && !empty($value)){
-    				$src=$value;
-    				break;
+    		$itmAttribs=$item->attributes;
+    		$getValueFromAttribs=function($pKey) use ($itmAttribs) {
+    			$src='';
+    			foreach ($itmAttribs as $key => $value){
+    				if($key==$pKey && !empty($value)){
+    					$src=$value;
+    					break;
+    				}
     			}
+    			return $src;
+    		};
+    		$doMinify=true;
+    		$minify=$getValueFromAttribs('minify');
+    		if(!empty($minify)){
+    			unset($item->attributes['minify']);
+    			$item->cmdMinify=$minify;
+    			if(preg_match('#\bignore\b#', $minify)) $doMinify=false; # die('ignoring request found! @'.__LINE__.' ['.time().']: '.__FILE__);
+    			#die('got minify attribs: '.$minify.' @'.__LINE__.': '.__FILE__);
     		}
-    		if(!empty($src) && $this->isInternalScripts($src)){
+    		$src=$getValueFromAttribs('src');
+    		if(true==$doMinify && !empty($src) && $this->isInternalScripts($src)){
     			# $attributes['href']=$this->getMinifyUrlBase().'?css='.urlencode($attributes['href']);
     			$item->attributes['src']=$this->getMinifyUrlBase().'?js='.urlencode($src);
     			#$item->attributes['defer']=true;
