@@ -28,6 +28,7 @@ class Module {
 	#/*
 	public function getServiceConfig() {
 		$rtrn['factories']['appHttpLocation']=function (ServiceManager $sm) {
+				if(defined('APP_INIT_POINT_LOCATION')) return APP_INIT_POINT_LOCATION;
 				#die('got http location? @'.__LINE__.': '.__FILE__);
 				if(!defined('DS')) define('DS', DIRECTORY_SEPARATOR);
 				if(!defined('APP_ROOT_PATH')){
