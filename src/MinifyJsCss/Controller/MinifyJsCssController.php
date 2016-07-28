@@ -19,14 +19,18 @@ class MinifyJsCssController extends AbstractActionController {
 		$response=$this->getResponse();
 		$getQuery=$this->getRequest()->getUri()->getQueryAsArray();
 		$appHttpLctn=$this->getAppHttpLocation();
-		#echo('$appHttpLctn: '.$appHttpLctn.'<br />');
+		#die('$appHttpLctn: '.$appHttpLctn);
 		$getResponseByReadingFile=function($pQryVar, $pContentType) use ($response, $getQuery, $appHttpLctn, $basePath){
 			$errCssFiles=$cssFiles=array();
 			$cssFileCsv=explode(',', $getQuery[$pQryVar]);
 			$maxFlTime=0;
+			$appHttpLctnX=rtrim($appHttpLctn, DS);
 			foreach($cssFileCsv as $css){
 				#echo 'ltrim(trim($css), $basePath): '.str_replace(array('/', '\\'), DS, ltrim(trim($css), $basePath)).'<br />';
-				$flLoc=$appHttpLctn.str_replace(array('/', '\\'), DS, ltrim(trim($css), $basePath));
+				$css=trim(str_replace(array('/', '\\'), DS, $css), DS);
+				$flLoc=$appHttpLctnX.DS.str_replace(array('/', '\\'), DS, $css);
+				if($basePath!='/') $flLoc=$appHttpLctnX.DS.str_replace(array('/', '\\'), DS, substr($css, strlen($basePath)));
+				#$flLoc=$appHttpLctn.str_replace(array('/', '\\'), DS, ltrim(trim($css), $basePath));
 				if(file_exists($flLoc)){
 					$flTime=filemtime($flLoc);
 					$cssFiles[$flLoc]=array('location'=>str_replace(array('/', '\\'), DS, $flLoc), 'mtime'=>$flTime);
@@ -41,20 +45,20 @@ class MinifyJsCssController extends AbstractActionController {
 					$flContents='';
 					foreach($cssFiles as $cssFl) $flContents.='/* location: '.$cssFl['location'].' */'.file_get_contents($cssFl['location']);
 					$response->getHeaders()
-							->addHeaderLine('Content-Transfer-Encoding', 'binary')
-							->addHeaderLine('Content-Type', $pContentType)
-						;
+					->addHeaderLine('Content-Transfer-Encoding', 'binary')
+					->addHeaderLine('Content-Type', $pContentType)
+					;
 					$response->setContent('/* '.$pQryVar.' file from minify. time: '.time().' */'.preg_replace('#\s+#', ' ', $flContents));
 				}
 			}else{
 				$response->getHeaders()
-						->addHeaderLine('Content-Transfer-Encoding', 'binary')
-						->addHeaderLine('Content-Type', $pContentType)
-						->addHeaderLine('Expires', '')
-						->addHeaderLine('Cache-Control', 'public')
-						->addHeaderLine('Cache-Control', 'max-age=1800', true)
-						->addHeaderLine('Pragma', '')
-					;
+				->addHeaderLine('Content-Transfer-Encoding', 'binary')
+				->addHeaderLine('Content-Type', $pContentType)
+				->addHeaderLine('Expires', '')
+				->addHeaderLine('Cache-Control', 'public')
+				->addHeaderLine('Cache-Control', 'max-age=1800', true)
+				->addHeaderLine('Pragma', '')
+				;
 				$response->setContent('/* blank '.$pQryVar.' file from minify! time: '.time().' ['.$getQuery[$pQryVar].'] locations - '.implode(' | ', $errCssFiles).' */');
 			}
 			return $response;
@@ -67,6 +71,92 @@ class MinifyJsCssController extends AbstractActionController {
 		}
 		$response->setContent('zf2 js and css minify project. cur time: '.time());
 		return $response;
+	}
+	private function workingIndexCode(){
+
+		if(array_key_exists('css', $getQuery)){
+			$errCssFiles=$cssFiles=array();
+			$cssFileCsv=explode(',', $getQuery['css']);
+			$maxFlTime=0;
+			foreach($cssFileCsv as $css){
+				$css=rtrim($css, '/');
+				$css=rtrim($css, '\\');
+				$flLoc=$appHttpLctn.ltrim($css, '/');
+				if($basePath!='/') $flLoc=$appHttpLctn.substr($css, strlen($basePath)+1);
+				if(file_exists($flLoc)){
+					$flTime=filemtime($flLoc);
+					$cssFiles[$flLoc]=array('location'=>str_replace(array('/', '\\'), DS, $flLoc), 'mtime'=>$flTime);
+					if($maxFlTime<$flTime) $maxFlTime=$flTime;
+				}else $errCssFiles[]=$flLoc;
+			}
+			#die('$$appHttpLctn: '.$appHttpLctn.'<pre>'.print_r(array($basePath, $cssFiles, $errCssFiles), true));
+			if(!empty($cssFiles)){
+				ksort($cssFiles);
+				$eTag=md5(implode(',', array_keys($cssFiles)));
+				if(!$this->handleCache($eTag)){
+					$flContents='';
+					foreach($cssFiles as $cssFl) $flContents.='/* location: '.$cssFl['location'].' */'.file_get_contents($cssFl['location']);
+					$response->getHeaders()
+					->addHeaderLine('Content-Transfer-Encoding', 'binary')
+					->addHeaderLine('Content-Type', 'text/css')
+					;
+					$response->setContent('/* css file from minify. time: '.time().' */'.preg_replace('#\s+#', ' ', $flContents));
+				}
+			}else{
+				$response->getHeaders()
+				->addHeaderLine('Content-Transfer-Encoding', 'binary')
+				->addHeaderLine('Content-Type', 'text/css')
+				->addHeaderLine('Expires', '')
+				->addHeaderLine('Cache-Control', 'public')
+				->addHeaderLine('Cache-Control', 'max-age=1800', true)
+				->addHeaderLine('Pragma', '')
+				;
+				$response->setContent('/* blank css file from minify! time: '.time().' ['.$getQuery['css'].'] locations - '.implode(' | ', $errCssFiles).' */');
+			}
+			return $response;
+		}
+		if(array_key_exists('js', $getQuery)){
+			$jsFiles=array();
+			$cssFileCsv=explode(',', $getQuery['js']);
+			$maxFlTime=0;
+			foreach($cssFileCsv as $css){
+				$css=rtrim($css, '/');
+				$css=rtrim($css, '\\');
+				$flLoc=$appHttpLctn.ltrim($css, '/');
+				if($basePath!='/') $flLoc=$appHttpLctn.substr($css, strlen($basePath)+1);
+				#$flLoc=$appHttpLctn.ltrim(trim($css), $basePath);
+				if(file_exists($flLoc)){
+					$flTime=filemtime($flLoc);
+					$jsFiles[$flLoc]=array('location'=>str_replace(array('/', '\\'), DS, $flLoc), 'mtime'=>$flTime);
+					if($maxFlTime<$flTime) $maxFlTime=$flTime;
+				}
+			}
+			#die('$$appHttpLctn: '.$appHttpLctn.'<pre>'.print_r($cssFiles, true));
+			if(!empty($jsFiles)){
+				ksort($jsFiles);
+				$eTag=md5(implode(',', array_keys($jsFiles)));
+				if(!$this->handleCache($eTag)){
+					$flContents='';
+					foreach($jsFiles as $cssFl) $flContents.='/* location: '.$cssFl['location'].' */'.file_get_contents($cssFl['location']);
+					$response->getHeaders()
+					->addHeaderLine('Content-Transfer-Encoding', 'binary')
+					->addHeaderLine('Content-Type', 'text/javascript')
+					;
+					$response->setContent('/* js file from minify. time: '.time().' */'.preg_replace('#\s+#', ' ', $flContents));
+				}
+			}else{
+				$response->getHeaders()
+				->addHeaderLine('Content-Transfer-Encoding', 'binary')
+				->addHeaderLine('Content-Type', 'text/javascript')
+				->addHeaderLine('Expires', '')
+				->addHeaderLine('Cache-Control', 'public')
+				->addHeaderLine('Cache-Control', 'max-age=1800', true)
+				->addHeaderLine('Pragma', '')
+				;
+				$response->setContent('/* blank js file from minify. time: '.time().' ['.$getQuery['js'].'] */');
+			}
+			return $response;
+		}
 	}
 	private function isCacheExists($last_modified_time, $etag=NULL){
 		$reqHeaders=$this->getRequest()->getHeaders()->toArray();
